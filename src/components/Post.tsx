@@ -1,40 +1,95 @@
+import { EventHandler, FormEvent, FormEventHandler, FunctionComponent, useState } from "react";
+import { PostType } from "../@types/@types";
 import { Avatar } from "./Avatar";
 import { Comment } from "./Comment";
 import styles from "./Post.module.css";
-export const Post = () => {
+import { format, formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
+
+export const Post: FunctionComponent<PostType> = ({
+  author,
+  content,
+  publishedAt,
+}) => {
+
+  const [comment, setComment] = useState<string>('')
+  const [commentList, setCommentList] = useState<string[]>([]);
+  
+  const publichedDateFormatted = format(
+    publishedAt,
+    "dd 'de' LLLL 'às' HH:mm",
+    {
+      locale: ptBR,
+    }
+  );
+  const diferenceToNow = formatDistanceToNow(publishedAt, {
+    locale: ptBR,
+    addSuffix: true,
+  });
+  const handleNewComment = (e:FormEvent) =>{
+    e.preventDefault();
+    setCommentList([...commentList, comment])
+    setComment('');
+    console.log(commentList);
+    
+  }
+  const handleDeleteComment = (commentToDelete: string)=>{
+    let listWithoutDeletedComment = commentList.filter((comment)=>{
+      return comment !== commentToDelete
+    })
+    setCommentList(listWithoutDeletedComment);
+  }
+  const isTextareaEmpty = comment === '';
   return (
     <article className={styles.post}>
       <header>
         <div className={styles.author}>
-          <Avatar src="https://xesque.rocketseat.dev/users/avatar/profile-cfa5b3a3-ab35-458d-ab1c-6da74da28a3b-1656423935381.jpg" />
+          <Avatar src={author.avatarURL} />
           <div className={styles.authorInfo}>
-            <strong>Nome Sobrenome</strong>
-            <span> Cargo profission</span>
+            <strong> {author.name} </strong>
+            <span> {author.role} </span>
           </div>
         </div>
-        <time title="11 de Maio as 08:13" dateTime="2022-05-11 08:11:30">
-          Publicado
+        <time
+          title={publichedDateFormatted}
+          dateTime={publishedAt.toISOString()}
+        >
+          {diferenceToNow}
         </time>
       </header>
 
       <div className={styles.content}>
-        <p></p>
-        <p></p>
-        <p></p>
+        {content.map((line) => {
+          if (line.type === "paragraph") {
+            return <p key={line.content}>{line.content}</p>;
+          } else if (line.type === "link") {
+            return (
+              <p key={line.content}>
+                <a href="#">{line.content}</a>
+              </p>
+            );
+          }
+        })}
       </div>
 
-      <form className={styles.commentForm}>
+      <form onSubmit={handleNewComment} className={styles.commentForm}>
         <strong>Deixe o seu feedback</strong>
-        <textarea placeholder="Deixe um comentário." />
+        <textarea 
+          value={comment}
+          onChange={(e)=>setComment(e.target.value)}
+          placeholder="Deixe um comentário."
+        />
         <footer>
-          <button type="submit"> Publicar </button>
+          <button type="submit" disabled={isTextareaEmpty}> Publicar </button>
         </footer>
       </form>
 
       <div className={styles.commentList}>
-        <Comment />
-        <Comment />
-        <Comment />
+        {commentList.map((comment)=>{
+          return <Comment key={comment} content={comment} onDeleteComment={handleDeleteComment}/>
+          
+        })}
+        
       </div>
     </article>
   );
